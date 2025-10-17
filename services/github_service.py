@@ -75,11 +75,28 @@ def publish_changes(repo: git.Repo, task_id: str, round_index: int) -> str:
         log.info("[Git] Adding all files...")
         repo.git.add(A=True)
         
-        # Check if there's anything to commit
-        if not repo.index.diff("HEAD"):
-            log.warning("[Git] No changes detected to commit.")
-            # If no changes, just return the latest commit SHA
+        # Check if there are changes staged for commit.
+    needs_commit = False
+    if not repo.head.is_valid(): # Check if repo has any commits yet (is HEAD valid?)
+        # First commit: Check if anything was staged at all compared to an empty repo
+        if repo.index.diff(None):
+            needs_commit = True
+        else:
+            # This should not happen if the LLM generated files, but good to check
+            log.error("[Git] Initial commit attempted but no files were staged.")
+            raise Exception("Initial commit failed: No files staged.")
+    elif repo.is_dirty(index=True): # Subsequent commits: Check if index differs from the last commit (HEAD)
+        needs_commit = True
+
+    if not needs_commit:
+        log.warning("[Git] No changes staged to commit.")
+        # If HEAD exists (not the first commit) return its SHA, otherwise something is wrong
+        if repo.head.is_valid():
             return repo.head.object.hexsha
+        else:
+            # Should be unreachable due to the check above, but as a safeguard:
+            log.error("[Git] Inconsistent state: HEAD invalid but no staged files for initial commit.")
+            raise Exception("Commit failed due to inconsistent Git state.")
 
         log.info("[Git] Committing changes...")
         commit_message = f"Task: {task_id} | Round: {round_index}"
