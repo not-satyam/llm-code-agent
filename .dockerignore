@@ -1,0 +1,17 @@
+# Ignore Docker and Git files
+.dockerignore
+.git
+.gitignore
+
+# Ignore Python virtual environment and cache
+.venv/
+venv/
+__pycache__/
+
+# Ignore IDE and OS-specific files
+.vscode/
+.idea/
+.DS_Store
+
+# CRITICAL: Ignore environment secrets
+.env
