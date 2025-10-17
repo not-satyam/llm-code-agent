@@ -4,3 +4,4 @@ pydantic-settings
 httpx
 GitPython
 python-dotenv
+pydantic[email]
