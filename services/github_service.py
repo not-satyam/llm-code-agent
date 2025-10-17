@@ -76,29 +76,29 @@ def publish_changes(repo: git.Repo, task_id: str, round_index: int) -> str:
         repo.git.add(A=True)
 
         # Check if there are changes staged for commit.
-        needs_commit = False
-        if not repo.head.is_valid(): # Check if repo has any commits yet (is HEAD valid?)
-            # First commit: Check if anything was staged at all compared to an empty repo
-             if repo.index.diff(None):
-                 needs_commit = True
-             else:
-                 # This should not happen if the LLM generated files, but good to check
-                 log.error("[Git] Initial commit attempted but no files were staged.")
-                 raise Exception("Initial commit failed: No files staged.")
-        elif repo.is_dirty(index=True): # Subsequent commits: Check if index differs from the last commit (HEAD)
-            needs_commit = True
+        perform_commit = False
+        if not repo.head.is_valid():
+            # This is the first commit attempt after repo init.
+            # We assume files were added and need committing.
+            log.info("[Git] Preparing for initial commit.")
+            perform_commit = True
+        elif repo.is_dirty(index=True):
+            # Subsequent commits: Check if index differs from the last commit (HEAD)
+            log.info("[Git] Staged changes detected for commit.")
+            perform_commit = True
 
-        if not needs_commit:
+        if not perform_commit:
             log.warning("[Git] No changes staged to commit.")
-            # If HEAD exists (not the first commit) return its SHA, otherwise something is wrong
+            # If HEAD exists (not the first commit), return its SHA.
+            # If HEAD doesn't exist AND we didn't perform commit, something is wrong.
             if repo.head.is_valid():
-                 return repo.head.object.hexsha
+                return repo.head.object.hexsha
             else:
-                 # Should be unreachable due to the check above, but as a safeguard:
-                 log.error("[Git] Inconsistent state: HEAD invalid but no staged files for initial commit.")
-                 raise Exception("Commit failed due to inconsistent Git state.")
+                 # This state should ideally not be reached if LLM worked.
+                 log.error("[Git] Inconsistent state: HEAD invalid and no commit performed.")
+                 raise Exception("Commit failed due to inconsistent Git state (initial commit check).")
 
-        # --- The rest of the function (commit, push) ---
+        # --- Commit and Push Logic ---
         log.info("[Git] Committing changes...")
         commit_message = f"Task: {task_id} | Round: {round_index}"
         repo.index.commit(commit_message)
