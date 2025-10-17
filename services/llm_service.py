@@ -9,7 +9,7 @@ from config import get_settings
 log = logging.getLogger("uvicorn")
 settings = get_settings()
 
-GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={settings.GOOGLE_API_KEY}"
+GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={settings.GOOGLE_API_KEY}"
 
 # The system prompt and schema, inspired by your reference
 SYSTEM_PROMPT = """
